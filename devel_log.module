@@ -1,0 +1,123 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function devel_log_menu() {
+  $items = array();
+
+  $items['admin/reports/devel-log'] = array(
+    'title' => 'Developer Log',
+    'description' => 'Generic debugging log',
+    'page callback' => 'devel_log_log_view',
+    'access arguments' => array('access metagenics log'),
+    'file' => 'devel_log.admin.inc',
+  );
+
+  $items['admin/reports/devel-log/%'] = array(
+    'title' => 'View Log Report',
+    'description' => 'View a single development log',
+    'page callback' => 'devel_log_log_record_view',
+    'page arguments' => array(3),
+    'access arguments' => array('access metagenics log'),
+    'file' => 'devel_log.admin.inc',
+  );
+
+  $items['admin/reports/devel-log/clear'] = array(
+    'title' => 'Clear Log',
+    'description' => 'Clear the log',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('devel_log_log_clear_form'),
+    'access arguments' => array('access devel log'),
+    'file' => 'devel_log.admin.inc',
+  );
+
+  $items['admin/config/development/devel-log'] = array(
+    'title' => 'Devel Log Settings',
+    'description' => 'Settings for Devel Log',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('devel_log_settings_form'),
+    'access arguments' => array('administer devel log'),
+    'file' => 'devel_log.admin.inc',
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements hook_permission().
+ */
+function devel_log_permission() {
+  return array(
+    'administer devel log' => array(
+      'title' => "Administer Developer Log",
+    ),
+    'access devel log' => array(
+      'title' => "Access Developer Log",
+    ),
+  );
+}
+
+
+/**
+ * Function to write a record to the devel_log_log table for debugging purposes.
+ * @param $log_identifier
+ *   The log identifier to use when writing to the database.
+ * @param unknown_type $message
+ *   A message to display on the admin page
+ * @param unknown_type $data
+ *   An array of data that will be used for debugging
+ * @return
+ *   The mllid - a unique log id that can be used to trace this record
+ */
+function devel_log_log_add_record($log_identifier, $message, $data = array()) {
+
+  $sql = 'SELECT logging_enabled FROM {devel_log_identifiers} WHERE log_identifier = :log_identifier';
+  $result = db_query($sql, array(':log_identifier' => $log_identifier))->fetchField();
+
+  $can_write = TRUE;
+  if ($result !== FALSE) {
+    if ($result === '0') {
+      $can_write = FALSE;
+    }
+  }
+  else {
+    db_insert('devel_log_identifiers')
+    ->fields(array(
+      'log_identifier' => $log_identifier,
+      'logging_enabled' => 1,
+    ))
+    ->execute();
+  }
+
+  if ($can_write) {
+    $mllid = db_insert('devel_log_log')
+    ->fields(array(
+      'log_identifier' => $log_identifier,
+      'timestamp' => REQUEST_TIME,
+      'message' => $message,
+      'data' => !empty($data) ? serialize($data) : NULL,
+    ))
+    ->execute();
+
+    return $mllid;
+  }
+  return FALSE;
+}
+
+
+function devel_log_get_log_identifiers() {
+  $log_identifiers = &drupal_static(__FUNCTION__);
+  if (!isset($log_identifiers)) {
+    $sql = 'SELECT * FROM {devel_log_identifiers}';
+    $log_identifiers = db_query($sql)->fetchAll();
+  }
+
+  return $log_identifiers;
+}
+
+
+function devel_log_init() {
+  devel_log_log_add_record('agents_of_shield', 'testing123', array('test1' => 'you suck', 'test2' => 'a whole lot'));
+}

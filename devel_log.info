@@ -1,0 +1,4 @@
+name = Developer Log
+description = Implement logging to track errors
+core = 7.x
+package = Development

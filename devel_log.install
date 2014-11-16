@@ -1,0 +1,102 @@
+<?php
+
+
+/**
+ * Implements hook_schema().
+ */
+function devel_log_schema() {
+  $schema = array();
+
+  $schema['devel_log_log'] = array(
+    'description' => 'A generic log table for Debugging',
+    'fields' => array(
+      'dllid' => array(
+        'description' => 'A unique log integer id',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'log_identifier' => array(
+        'description' => 'The log identifier for this log item.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'timestamp' => array(
+        'description' => 'The UNIX timestamp that this event occured',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'message' => array(
+        'description' => 'A message to be displayed to the user.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'data' => array(
+        'description' => 'Serialized data to use for debugging.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
+    ),
+    'indexes' => array(
+      'log_identifier' => array('log_identifier'),
+      'timestamp' => array('timestamp'),
+    ),
+    'primary key' => array('dllid'),
+  );
+
+  $schema['devel_log_identifiers'] = array(
+    'description' => 'Table to store setting related to log identifiers.',
+    'fields' => array(
+      'log_identifier' => array(
+        'description' => 'A unique log identifier.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'logging_enabled' => array(
+        'description' => 'Boolean indicating whether logging is enabled for this identifier.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'logging_enabled' => array('logging_enabled'),
+    ),
+    'primary key' => array('log_identifier'),
+  );
+
+  return $schema;
+}
+
+
+function devel_log_update_7001(&$sandbox) {
+  $schema = array(
+    'description' => 'Table to store setting related to log identifiers.',
+    'fields' => array(
+      'log_identifier' => array(
+        'description' => 'A unique log identifier.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'logging_enabled' => array(
+        'description' => 'Boolean indicating whether logging is enabled for this identifier.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'logging_enabled' => array('logging_enabled'),
+    ),
+    'primary key' => array('log_identifier'),
+  );
+  if (!db_table_exists('devel_log_identifiers')) {
+    db_create_table('devel_log_identifiers', $schema);
+  }
+}
